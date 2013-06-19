@@ -161,6 +161,8 @@ def point (**kwargs):
     @type y: int
     @param center: (x,y) coordinates of point
     @type center: tuple
+    @param points: [(x1,y1), ..., (x_n, y_n)] coordinates of points
+    @type center: list of tuples
     @param color: color code to use; if not specified, use default
     @type color: int
     @param undo: if specified [default=True], keep track of overlays for undo()
@@ -178,20 +180,30 @@ def point (**kwargs):
     last_overlay = []
     list_of_points = []
 
-    allowed_arguments = ["x", "y", "center", "color", "frame", "undo"]
-    x = None; y = None; center = None; color = None; frame = None; undo = True
+    allowed_arguments = ["x", "y", "center", "points", "color", "frame", "undo"]
+    points = [[None, None]]; color = None; frame = None; undo = True
     keys = kwargs.keys()
-    if "center" in keys and ("x" in keys or "y" in keys):
+
+    nparams = sum(["center" in keys,
+                   ("x" in keys or "y" in keys),
+                   "points" in keys])
+
+    if nparams == 0:
+        raise ValueError, "You must specify either 'x' and 'y' or 'center' or 'points'."
+    elif nparams > 1:
         raise ValueError, \
-            "Specify either 'center' or 'x' and 'y', but not both."
+            "Specify either one of the following: 'points'; 'center'; 'x' and 'y'."
+
     for key in keys:
         if key in allowed_arguments:
             if key == "center":
-                (x, y) = kwargs["center"]
+                points = [kwargs["center"]]
+            elif key == "points":
+                points = kwargs["points"]
             elif key == "x":
-                x = kwargs["x"]
+                points[0][0] = kwargs["x"]
             elif key == "y":
-                y = kwargs["y"]
+                points[0][1] = kwargs["y"]
             elif key == "color":
                 color = kwargs["color"]
             elif key == "frame":
@@ -200,20 +212,19 @@ def point (**kwargs):
                 undo = kwargs["undo"]
         else:
             raise ValueError, \
-            "Invalid argument to 'point'; use 'x', 'y', 'center', 'color', 'frame' or 'undo'."
-    if x is None or y is None:
-        raise ValueError, "You must specify either 'x' and 'y' or 'center'."
+            "Invalid argument to 'point'; use 'x', 'y', 'center', 'points', 'color', 'frame' or 'undo'."
 
     color = _checkColor (color)
 
     (fd, tx, ty, fbwidth, fbheight) = _open_display(frame=frame)
 
-    (x, y) = _transformPoint (x, y, tx, ty)
-    if x >= 0 and y >= 0 and x < fbwidth and y < fbheight:
-        # save the value that is currently at (x,y)
-        _update_save (fd, x, y, list_of_points, last_overlay,undo=undo)
-        # write a new value at (x,y)
-        fd.writeData (x, y, color)
+    for x, y in points:
+        (x, y) = _transformPoint (x, y, tx, ty)
+        if x >= 0 and y >= 0 and x < fbwidth and y < fbheight:
+            # save the value that is currently at (x,y)
+            _update_save (fd, x, y, list_of_points, last_overlay, undo=undo)
+            # write a new value at (x,y)
+            fd.writeData (x, y, color)
 
     global_save.append (last_overlay)
     
