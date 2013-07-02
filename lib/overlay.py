@@ -153,6 +153,9 @@ def _update_save (fd, x, y, list_of_points, last_overlay, undo=True):
 def point (**kwargs):
     """Draw a point.
 
+    Returns an opaque object respresenting the overlay that can later
+    be passed to the 'undo' function to undo this overlay. 
+
     @param x: image X coordinate of point
     @type x: int
     @param y: image Y coordinate of point
@@ -228,9 +231,14 @@ def point (**kwargs):
     
     # The close() method needs to be called by the calling routine.
     #fd.close()
+
+    return last_overlay
     
 def marker (**kwargs):
     """Draw a character.
+
+    Returns an opaque object respresenting the overlay that can later
+    be passed to the 'undo' function to undo this overlay. 
 
     @param x: image X coordinate of point
     @type x: int
@@ -313,8 +321,13 @@ def marker (**kwargs):
     # The close() method needs to be called by the calling routine.
     #fd.close()
 
+    return last_overlay
+
 def rectangle (**kwargs):
     """Draw a rectangle.
+
+    Returns an opaque object respresenting the overlay that can later
+    be passed to the 'undo' function to undo this overlay. 
 
     @param left: image X coordinate of left edge
     @type left: int
@@ -470,8 +483,13 @@ def rectangle (**kwargs):
     # The close() method needs to be called by the calling routine.
     #fd.close()
 
+    return last_overlay
+
 def circle (**kwargs):
     """Draw a circle.
+
+    Returns an opaque object respresenting the overlay that can later
+    be passed to the 'undo' function to undo this overlay. 
 
     @param x: image X coordinate of center
     @type x: int
@@ -571,8 +589,13 @@ def circle (**kwargs):
     # The close() method needs to be called by the calling routine.
     #fd.close()
 
+    return last_overlay
+
 def polyline (**kwargs):
     """Draw a series of connected line segments.
+
+    Returns an opaque object respresenting the overlay that can later
+    be passed to the 'undo' function to undo this overlay. 
 
     @param points: (x,y) points to connect with line segments
     @type points: list of tuples
@@ -701,17 +724,28 @@ def polyline (**kwargs):
     # The close() method needs to be called by the calling routine.
     #fd.close()
 
-def undo():
+    return last_overlay
+
+def undo(last_overlay=None):
     """Restore the values before the last overlay was written."""
 
     global global_save
 
     if len (global_save) == 0:
+        assert last_overlay is None, "'last_overlay' given to undo function, but there isn't anything in the global save list"
         return
 
     (fd, tx, ty, fbwidth, fbheight) = _open_display()
 
-    last_overlay = global_save.pop()
+    if last_overlay is None:
+        last_overlay = global_save.pop()
+    else:
+        # list.remove removes the first item, we want the last item
+        # removed to mimic "pop" behaviour
+        global_save.reverse()
+        global_save.remove(last_overlay)
+        global_save.reverse()
+        
     byte_buf = N.zeros (1, dtype=N.uint8)
     for (x, y, value) in last_overlay:
         byte_buf[0] = value
