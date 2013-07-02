@@ -44,10 +44,9 @@ C_TURQUOISE = 215
 C_VIOLET    = 216
 C_WHEAT     = 217
 
-# These two are used for saving the displayed values before drawing
+# Used for saving the displayed values before drawing
 # an overlay, to allow restoring the display (via undo).
 global_save = []
-global_byte_buf = N.zeros (1, dtype=N.uint8)
 
 # These two are for convenience, so they can take default values rather
 # than having to be specified for each function call.  The radius is
@@ -143,11 +142,10 @@ def _update_save (fd, x, y, list_of_points, last_overlay, undo=True):
         (updated by this function)
     @type last_overlay: list of (x,y,value) tuples
     """
-
-    global global_byte_buf
     if undo:
         if (x, y) not in list_of_points:
-            value = fd.readData (x, y, global_byte_buf)
+            byte_buf = N.zeros (1, dtype=N.uint8)
+            value = fd.readData (x, y, byte_buf)
             value = struct.unpack ('B', value)
             list_of_points.append ((x, y))
             last_overlay.append ((x, y, value[0]))
@@ -176,7 +174,7 @@ def point (**kwargs):
 
     # These are used for saving what is currently displayed, for use by
     # the undo() function.
-    global global_save, global_byte_buf
+    global global_save
     last_overlay = []
     list_of_points = []
 
@@ -255,7 +253,7 @@ def marker (**kwargs):
 
     # These are used for saving what is currently displayed, for use by
     # the undo() function.
-    global global_save, global_byte_buf
+    global global_save
     last_overlay = []
     list_of_points = []
 
@@ -350,7 +348,7 @@ def rectangle (**kwargs):
 
     # These are used for saving what is currently displayed, for use by
     # the undo() function.
-    global global_save, global_byte_buf
+    global global_save
     last_overlay = []
     list_of_points = []
 
@@ -496,7 +494,7 @@ def circle (**kwargs):
 
     # These are used for saving what is currently displayed, for use by
     # the undo() function.
-    global global_save, global_byte_buf
+    global global_save
     last_overlay = []
     list_of_points = []
 
@@ -594,7 +592,7 @@ def polyline (**kwargs):
 
     # These are used for saving what is currently displayed, for use by
     # the undo() function.
-    global global_save, global_byte_buf
+    global global_save
     last_overlay = []
     list_of_points = []
 
@@ -706,7 +704,7 @@ def polyline (**kwargs):
 def undo():
     """Restore the values before the last overlay was written."""
 
-    global global_save, global_byte_buf
+    global global_save
 
     if len (global_save) == 0:
         return
@@ -714,9 +712,10 @@ def undo():
     (fd, tx, ty, fbwidth, fbheight) = _open_display()
 
     last_overlay = global_save.pop()
+    byte_buf = N.zeros (1, dtype=N.uint8)
     for (x, y, value) in last_overlay:
-        global_byte_buf[0] = value
-        fd.writeData (x, y, global_byte_buf)
+        byte_buf[0] = value
+        fd.writeData (x, y, byte_buf)
 
     # The close() method needs to be called by the calling routine.
     #fd.close()
