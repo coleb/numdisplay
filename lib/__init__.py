@@ -78,7 +78,7 @@
                 The display parameters set here will ONLY apply to the display
                 of the current array.
 
-            readcursor(sample=0):
+            readcursor(sample=0, block=True):
                 Return a single cursor position from the image display.
                 By default, this operation will wait for a keystroke before
                 returning the cursor position. If 'sample' is set to 1,
@@ -446,9 +446,9 @@ class NumDisplay(object):
         _d.writeImage(bpix,_wcsinfo)
         #displaydev.close()
 
-    def readcursor(self,sample=0):
+    def readcursor(self, sample=0, block=True):
         """ Return the cursor position from the image display. """
-        return self.view.readCursor(sample=sample)
+        return self.view.readCursor(sample=sample, block=block)
     
     def getHandle(self):
         return self.handle
