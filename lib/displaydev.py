@@ -467,7 +467,6 @@ class ImageDisplay(object):
         self._writeHeader(self._IIS_READ, self._WCS, 0,0,0,frame,0)
 
         wcsstr = self._read(self._SZ_WCSBUF)
-        print "wcsstr: '%s'" % wcsstr
         _wcs = wcsstr.split()
         tx = int(round(float(_wcs[5])))
         ty = int(round(float(_wcs[6])))
