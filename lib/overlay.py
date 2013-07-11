@@ -298,23 +298,27 @@ def marker (**kwargs):
     (x, y) = _transformPoint (x, y, tx, ty)
 
     idict = ichar.initichar()
-    sprite = idict[mark]
-    # Should have the '+' for center of image
-    sprite = ichar.expandchar(sprite, txsize)
-    ixsize = 5*txsize
-    iysize = 7*txsize
-    # Simple version: just use overlay with a thickness of 1
-    points = sprite
-    npts = len(points[0])
-    for i in range(npts):
-        iy = y - iysize/2 + points[0][i]
-        ix = x - ixsize/2 + points[1][i]
 
-        if ix >= 0 and iy >= 0 and ix < fbwidth and iy < fbheight:
-            # save the value that is currently at (x,y)
-            _update_save (fd, ix, iy, list_of_points, last_overlay,undo=undo)
-            # write a new value at (x,y)
-            fd.writeData (ix, iy, color)
+    xoffset = 0
+    for char in mark:
+        sprite = idict[char]
+        # Should have the '+' for center of image
+        sprite = ichar.expandchar(sprite, txsize)
+        ixsize = 5*txsize
+        iysize = 7*txsize
+        # Simple version: just use overlay with a thickness of 1
+        points = sprite
+        npts = len(points[0])
+        for i in range(npts):
+            iy = y + iysize/2 - points[0][i]
+            ix = x - ixsize/2 + points[1][i] + xoffset
+
+            if ix >= 0 and iy >= 0 and ix < fbwidth and iy < fbheight:
+                # save the value that is currently at (x,y)
+                _update_save (fd, ix, iy, list_of_points, last_overlay, undo=undo)
+                # write a new value at (x,y)
+                fd.writeData (ix, iy, color)
+        xoffset += (ixsize + 1)
 
     global_save.append (last_overlay)
     
