@@ -78,11 +78,16 @@
                 The display parameters set here will ONLY apply to the display
                 of the current array.
 
-            readcursor(sample=0, block=True):
+            readcursor(sample=0, timeout=None):
                 Return a single cursor position from the image display.
                 By default, this operation will wait for a keystroke before
                 returning the cursor position. If 'sample' is set to 1,
                 then it will NOT wait to read the cursor.
+
+                If timeout is None, block until a cursor is
+                read. Otherwise, wait for timeout seconds for a cursor
+                command.
+                
                 This will return a string containing: x,y,frame and key.
 
             help():
@@ -446,9 +451,9 @@ class NumDisplay(object):
         _d.writeImage(bpix,_wcsinfo)
         #displaydev.close()
 
-    def readcursor(self, sample=0, block=True):
+    def readcursor(self, sample=0, timeout=None):
         """ Return the cursor position from the image display. """
-        return self.view.readCursor(sample=sample, block=block)
+        return self.view.readCursor(sample=sample, timeout=timeout)
     
     def getHandle(self):
         return self.handle

@@ -4,7 +4,7 @@ Modeled after the NOAO Client Display Library (CDL)
 
 Public functions:
 
-readCursor(sample=0, block=True)
+readCursor(sample=0, timeout=None)
         Read image cursor position
 
 open(imtdev=None)
@@ -248,7 +248,7 @@ class ImageDisplay(object):
         # This is used to handle interruption of readCursor before
         # read is complete.  Without this kluge, ^C interrupts
         # leave image display in a bad state.
-        # It is also now used for when readCursor was called with block=False
+        # It is also now used for when readCursor was called with a timeout
         self._inCursorMode = 0
 
         # Add hooks here for managing frame configuration
@@ -285,19 +285,17 @@ class ImageDisplay(object):
 
         return _fbconfig
     
-    def readCursor(self, sample=0, block=True):
-
+    def readCursor(self, sample=0, timeout=None):
         """Read image cursor value for this image display
 
         Return immediately if sample is true, or wait for keystroke
         if sample is false (default).  Returns a string with
         x, y, frame, and key.
 
-        If block is false and there is no data ready to be read from
-        the server, a NoDataReady exception will be raised. The cursor
-        position can still be retrieved by subsequent calls to
-        readCursor.
-        
+        If timeout is not None and there is no data ready to be read
+        from the server, a NoDataReady exception will be raised after
+        timeout seconds. The cursor position can still be retrieved by
+        subsequent calls to readCursor.
         """
         if not self._inCursorMode:
             opcode = self._IIS_READ
@@ -305,7 +303,7 @@ class ImageDisplay(object):
                 opcode |= self._IMC_SAMPLE
             self._writeHeader(opcode, self._IMCURSOR, 0, 0, 0, 0, 0)
             self._inCursorMode = 1
-        s = self._read(self._SZ_IMCURVAL, block=block)
+        s = self._read(self._SZ_IMCURVAL, timeout=timeout)
         self._inCursorMode = 0
         # only part up to newline is real data
         return s.split("\n")[0]
@@ -567,7 +565,7 @@ class ImageDisplay(object):
     def getHandle(self):
         return self
     
-    def _read(self, n, block=True):
+    def _read(self, n, timeout=None):
         """Read n bytes from image display and return as string
 
         Raises IOError on failure.  If a Tkinter widget exists, runs
@@ -575,8 +573,7 @@ class ImageDisplay(object):
         remain responsive.
         """
         try:
-            if not block:
-                timeout = 0
+            if timeout is not None:
                 readable, writable, exceptional = select.select([self._fdin], [], [], timeout)
                 if not readable:
                     raise NoDataReady
@@ -694,7 +691,7 @@ class ImageDisplayProxy(ImageDisplay):
             self._display = None
 
             
-    def readCursor(self, sample=0, block=True):
+    def readCursor(self, sample=0, timeout=None):
 
         """Read image cursor value for the active image display
 
@@ -702,16 +699,16 @@ class ImageDisplayProxy(ImageDisplay):
         if sample is false (default).  Returns a string with
         x, y, frame, and key.  Opens image display if necessary.
 
-        If block is False and there is no data ready to be read from
-        the server, a NoDataReady exception will be raised. The cursor
-        position can still be retrieved by subsequent calls to
-        readCursor with block either True or False. 
+        If timeout is not None and there is no data ready to be read
+        from the server, a NoDataReady exception will be raised after
+        timeout seconds. The cursor position can still be retrieved by
+        subsequent calls to readCursor.
         """
         
         if not self._display:
             self.open()            
         try:
-            value = self._display.readCursor(sample, block)
+            value = self._display.readCursor(sample, timeout)
             # Null value indicates display was probably closed
             if value:
                 return value 
@@ -722,7 +719,7 @@ class ImageDisplayProxy(ImageDisplay):
         # reopening the connection will fix it.  If that
         # fails then give up.
         self.open()
-        return self._display.readCursor(sample, block)
+        return self._display.readCursor(sample, timeout)
 
     def setCursor(self,x,y,wcs):
         if not self._display:
