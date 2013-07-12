@@ -475,3 +475,5 @@ display = view.display
 readcursor = view.readcursor
 getHandle = view.getHandle
 checkDisplay = view.checkDisplay
+
+NoDataReady = displaydev.NoDataReady
