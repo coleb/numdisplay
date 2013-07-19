@@ -81,10 +81,10 @@ class ImageWCS(object):
         self.d = -1.0
         _shape = pix.shape
         # Start assuming full image can fit in frame buffer
-        self.tx = int(_shape[1] / 2. + 0.5)
-        self.ty = int(_shape[0] / 2. + 0.5)
-        self.dtx = _shape[1] / 2.
-        self.dty = _shape[0] / 2.
+        self.tx = _shape[1] / 2 + _shape[1] % 2
+        self.ty = _shape[0] / 2 + _shape[0] % 2
+        self.dtx = _shape[1] / 2 + _shape[1] % 2
+        self.dty = _shape[0] / 2 + _shape[0] % 2
                
         # Determine full range of pixel values for image
         if not z1:
@@ -118,8 +118,8 @@ class ImageWCS(object):
             self.b = float(_wcs[2])
             self.c = float(_wcs[3])
             self.d = float(_wcs[4])
-            self.tx = float(_wcs[5])
-            self.ty = float(_wcs[6])
+            self.tx = int(_wcs[5])
+            self.ty = int(_wcs[6])
             self.z1 = float(_wcs[7])
             self.z2 = float(_wcs[8])
             self.zt = int(_wcs[9])
@@ -476,20 +476,19 @@ class ImageDisplay(object):
 
         """ Update WCS to match frame buffer being used. """
         
-        # Update WCS information with offsets into frame buffer for image        
-        wcsinfo.tx = int(((wcsinfo.full_nx + 1.0) / 2.) - ((self.fbwidth) / 2.) + 0.5) 
-        wcsinfo.ty = int((self.fbheight) + ((wcsinfo.full_ny / 2.) - (self.fbheight / 2.)) + 0.5) 
+        # Update WCS information with offsets into frame buffer for image
+        wcsinfo.tx = (wcsinfo.full_nx / 2) + (wcsinfo.full_nx % 2) - (self.fbwidth / 2) + 1
+        wcsinfo.ty = self.fbheight + (wcsinfo.full_ny / 2) - (self.fbheight / 2)
 
         wcsinfo.nx = min(wcsinfo.full_nx, self.fbwidth)
         wcsinfo.ny = min(wcsinfo.full_ny, self.fbheight)
         
         # Keep track of the origin of the displayed, trimmed image
         # which fits in the buffer.
-        wcsinfo.dtx = int((wcsinfo.nx / 2.) - ((self.fbwidth) / 2.) + 0.5)
-        wcsinfo.dty = int((self.fbheight) + ((wcsinfo.ny / 2.) - (self.fbheight / 2.)) + 0.5)
+        wcsinfo.dtx = (wcsinfo.nx / 2) - (wcsinfo.nx % 2) - (self.fbwidth / 2)
+        wcsinfo.dty = self.fbheight + (wcsinfo.ny / 2) + (wcsinfo.ny % 2) - (self.fbheight / 2)
 
     def writeImage(self,pix,wcsinfo):
-
         """ Write out image to display device in 32Kb sections."""
 
         _fbnum = self.fbconfig
@@ -504,7 +503,7 @@ class ImageDisplay(object):
         
         # compute the range in output pixels the input image would cover
         # input image could be smaller than buffer size/output image size.
-        _lx = (_fbw / 2) - (_nnx / 2)
+        _lx = (_fbw / 2) - (_nnx / 2) - (_nnx % 2)
                 
         _lper_block = SZ_BLOCK / _fbw
         if _lper_block > 1: _lper_block = 1        
